@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+.vercel
+.next
+.qodo
+
+# Prisma
+/prisma/.env
+/prisma/**/*.d.ts
+/prisma/**/*.js
+/prisma/**/*.map
+/src/generated/prisma/
+
+# Logs
+logs
+*.log
+
+# Local development
+*.local

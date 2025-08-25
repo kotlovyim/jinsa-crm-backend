@@ -1,0 +1,33 @@
+{
+    "name": "api-gateway",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "src/server.ts",
+    "scripts": {
+        "start": "node dist/server.js",
+        "dev": "tsx watch src/server.ts",
+        "build": "tsc && tsc-alias",
+        "dev:with-build": "concurrently \"npm run build -- --watch\" \"nodemon dist/server.js\""
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.3",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/morgan": "^1.9.10",
+        "@types/node": "^20.11.0",
+        "concurrently": "^8.2.2",
+        "nodemon": "^3.1.0",
+        "tsc-alias": "^1.8.8",
+        "tsx": "^4.20.5",
+        "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "dotenv": "^17.2.1",
+        "express": "^5.1.0",
+        "helmet": "^8.1.0",
+        "http-proxy-middleware": "^3.0.5",
+        "jsonwebtoken": "^9.0.2",
+        "morgan": "^1.10.1"
+    }
+}

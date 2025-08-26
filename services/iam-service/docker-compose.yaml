@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+    postgres:
+        image: postgres:13
+        ports:
+            - 5434:5432
+        environment:
+            POSTGRES_PASSWORD: 1111
+            POSTGRES_USER: postgresUser
+            POSTGRES_DB: postgresDB
+        networks:
+            - network-connetion
+
+networks:
+    network-connetion:

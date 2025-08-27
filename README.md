@@ -97,13 +97,26 @@ graph TD
    Update the `.env` files with your configuration.
 
 3. **Start the application**
-   ```bash
-   docker-compose up --build -d
-   ```
+
+   - Development (hot reload, mounted volumes)
+     ```bash
+     docker compose -f docker-compose.dev.yml up --build
+     # stop: Ctrl+C, or in another terminal:
+     # docker compose -f docker-compose.dev.yml down
+     ```
+
+   - Production (optimized images)
+     ```bash
+     docker compose up --build -d
+     # view logs:
+     docker compose logs -f
+     # stop:
+     docker compose down
+     ```
 
 4. **Access the application**
    - API Gateway: http://localhost:3000
-   - View logs: `docker-compose logs -f`
+   - IAM Service: http://localhost:3001
 
 ## 📁 Project Structure
 

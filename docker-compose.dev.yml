@@ -1,0 +1,62 @@
+services:
+    postgres:
+        image: postgres:16-alpine
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: jinsa
+        volumes:
+            - pgdata_dev:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    iam-service:
+        build:
+            context: ./services/iam-service
+            dockerfile: Dockerfile.dev
+        working_dir: /app
+        env_file:
+            - ./services/iam-service/.env
+        environment:
+            - PORT=3001
+            - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/jinsa?schema=public
+            - WATCHPACK_POLLING=true
+            - WATCHPACK_POLLING_INTERVAL=300
+        command: sh -c "npm install && npx prisma generate && npx prisma migrate dev && npm run dev"
+        volumes:
+            - ./services/iam-service:/app
+            - /app/node_modules
+        depends_on:
+            postgres:
+                condition: service_healthy
+        ports:
+            - "3001:3001"
+
+    api-gateway:
+        build:
+            context: ./api-gateway
+            dockerfile: Dockerfile.dev
+        env_file:
+            - ./api-gateway/.env
+        working_dir: /app
+        environment:
+            - PORT=3000
+            - IAM_SERVICE_URL=http://iam-service:3001
+            - CHOKIDAR_USEPOLLING=true
+            - CHOKIDAR_INTERVAL=300
+        command: sh -c "npm install && npm run dev"
+        volumes:
+            - ./api-gateway:/app
+            - /app/node_modules
+        depends_on:
+            - iam-service
+        ports:
+            - "3000:3000"
+
+volumes:
+    pgdata_dev:

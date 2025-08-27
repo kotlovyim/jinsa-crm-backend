@@ -10,6 +10,7 @@ const publicPaths = [
     "/iam/auth/register",
     "/iam/auth/login",
     "/iam/auth/verify-email",
+    "/iam/health",
 ];
 
 router.use((req, res, next) => {

@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { User } from "@/types/user/user.type.js";
 
-const JWT_SECRET = process.env["JWT_SECRET"];
+const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
     throw new Error(
         "JWT_SECRET environment variable is not defined. Please set it before starting the server."
@@ -29,7 +29,7 @@ export const authMiddleware = (
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET) as Omit<User, 'password'>;
+        const decoded = jwt.verify(token, JWT_SECRET) as Omit<User, "password">;
         req.user = decoded;
         next();
     } catch (error) {

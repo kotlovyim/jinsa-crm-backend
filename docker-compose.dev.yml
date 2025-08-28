@@ -25,9 +25,7 @@ services:
         environment:
             - PORT=3001
             - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/jinsa?schema=public
-            - WATCHPACK_POLLING=true
-            - WATCHPACK_POLLING_INTERVAL=300
-        command: sh -c "npm install && npx prisma generate && npx prisma migrate dev && npm run dev"
+        command: sh -c "npx prisma migrate reset --force && npm run dev"
         volumes:
             - ./services/iam-service:/app
             - /app/node_modules
@@ -47,9 +45,6 @@ services:
         environment:
             - PORT=3000
             - IAM_SERVICE_URL=http://iam-service:3001
-            - CHOKIDAR_USEPOLLING=true
-            - CHOKIDAR_INTERVAL=300
-        command: sh -c "npm install && npm run dev"
         volumes:
             - ./api-gateway:/app
             - /app/node_modules

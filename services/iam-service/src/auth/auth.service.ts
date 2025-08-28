@@ -30,15 +30,16 @@ export class AuthService {
 
       const hash = await bcrypt.hash(dto.password, 10);
 
-      const create = await this.prisma.user.create({
+      await this.prisma.user.create({
         data: {
-          username: dto.username,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
           email: dto.email,
           password: hash,
         },
       });
 
-      return create;
+      return { message: 'User created successfully' };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -66,15 +67,21 @@ export class AuthService {
         throw new UnauthorizedException("Passwords don't match");
       }
 
-      const payload = { email: existingUser.email };
+      const payload = { id: existingUser.id };
+
       const accessToken = await this.jwt.signAsync(payload, {
         expiresIn: '1h',
         secret: process.env.JWT_TOKEN,
       });
 
       const refreshToken = await this.jwt.signAsync(payload, {
-        expiresIn: '24h',
+        expiresIn: '7d',
         secret: process.env.JWT_TOKEN,
+      });
+
+      await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: { refreshToken },
       });
 
       return {

@@ -48,7 +48,8 @@ describe('AuthService', () => {
 
   describe('signUp', () => {
     const signUpDto = {
-      username: 'testuser',
+      firstName: 'testuser',
+      lastName: 'testuser',
       email: 'test@example.com',
       password: 'password123',
     };
@@ -63,16 +64,15 @@ describe('AuthService', () => {
 
       const result = await authService.signUp(signUpDto);
       expect(result).toBeDefined();
-      expect(result.username).toBe(signUpDto.username);
-      expect(result.email).toBe(signUpDto.email);
-      expect(result.password).not.toBe(signUpDto.password);
+      expect(result.message).toBe('User created successfully');
     });
 
     it('should throw ConflictException if user already exists', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({
         email: 'test@example.com',
         id: 1,
-        username: 'existinguser',
+        firstName: 'existinguser',
+        lastName: 'existinguser',
       });
 
       await expect(authService.signUp(signUpDto)).rejects.toThrow(
@@ -126,7 +126,8 @@ describe('AuthService', () => {
       id: 1,
       email: 'test@example.com',
       password: 'hashed_password',
-      username: 'testuser',
+      firstName: 'testuser',
+      lastName: 'testuser',
     };
 
     it('should return tokens for valid credentials', async () => {

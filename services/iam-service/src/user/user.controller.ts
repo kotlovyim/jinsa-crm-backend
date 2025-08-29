@@ -19,7 +19,7 @@ import {
 } from '@nestjs/swagger';
 import type { User } from '@app/user/types/user.types';
 import { GetUser } from '@app/auth/decorators/get-user.decorator';
-import { JwtGuard } from '@app/auth/guards/authGuard';
+import { JwtGuard } from '@app/auth/guards/jwtGuard';
 import { PermissionGuard } from '@app/auth/guards/permissionGuard';
 import { Permission } from '@app/auth/decorators/permissions/permission.enum';
 import { RequirePermission } from '@app/auth/decorators/permissions/requirePermission.decorator';
@@ -73,18 +73,18 @@ export class UserController {
     return this.userService.assignRoleToUser(userId, roleId);
   }
 
-  @Delete('/:userId/roles/:roleId')
+  @Patch('/:userId/roles/:roleId')
   @RequirePermission(Permission.manage_roles)
-  @ApiOperation({ summary: 'Remove role from user' })
+  @ApiOperation({ summary: 'Change role of user' })
   @ApiBearerAuth('JWT-auth')
   @ApiResponse({
     status: 200,
-    description: 'Role removed from user successfully',
+    description: 'Role changed successfully',
   })
-  async removeRoleFromUser(
+  async changeRole(
     @Param('userId', ParseIntPipe) userId: string,
     @Param('roleId', ParseIntPipe) roleId: number,
   ) {
-    return this.userService.removeRoleFromUser(userId, roleId);
+    return this.userService.changeRole(userId, roleId);
   }
 }

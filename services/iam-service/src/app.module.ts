@@ -6,6 +6,7 @@ import { APP_PIPE } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { UserModule } from './user/user.module';
 import { RolesModule } from './roles/roles.module';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { RolesModule } from './roles/roles.module';
     PrismaModule,
     UserModule,
     RolesModule,
+    OtpModule,
   ],
   controllers: [],
   providers: [

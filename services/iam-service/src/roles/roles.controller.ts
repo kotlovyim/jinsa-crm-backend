@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { createRoleDto } from './dto/createRoleDto';
-import { JwtGuard } from 'src/auth/guards/authGuard';
+import { JwtGuard } from '@app/auth/guards/jwtGuard';
 import { RequirePermission } from '@app/auth/decorators/permissions/requirePermission.decorator';
 import { Permission } from 'src/auth/decorators/permissions/permission.enum';
 import { PermissionGuard } from 'src/auth/guards/permissionGuard';

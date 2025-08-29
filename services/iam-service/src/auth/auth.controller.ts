@@ -15,7 +15,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Register a new company and its owner' })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'Company and owner successfully registered. Please set up OTP to continue.',
+    description:
+      'Company and owner successfully registered. Please set up OTP to continue.',
     type: AuthResponseDto,
   })
   @ApiResponse({

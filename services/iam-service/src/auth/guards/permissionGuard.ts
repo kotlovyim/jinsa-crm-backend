@@ -3,12 +3,16 @@ import { Reflector } from '@nestjs/core';
 import { Permission } from '../decorators/permissions/permission.enum';
 import { PERM_KEY } from '../decorators/permissions/requirePermission.decorator';
 import { ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private prisma: PrismaService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions = this.reflector.getAllAndOverride<Permission[]>(
       PERM_KEY,
       [context.getHandler(), context.getClass()],
@@ -19,13 +23,24 @@ export class PermissionGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    const hasPermission = requiredPermissions.every((perm) =>
-      user.roles?.permission?.includes(perm),
-    );
 
-    if (!hasPermission) {
-      throw new ForbiddenException('User does not have permission');
-    }
-    return hasPermission;
+    const userRole = await this.prisma.user.findUnique({
+      where: {
+        id: user.id,
+      },
+      select: {
+        roleId: true,
+      },
+    });
+    console.log(userRole);
+
+    const userPermission = await this.prisma.role.findUnique({
+      where: {
+        id: userRole?.roleId,
+      },
+    });
+    console.log(userPermission);
+
+    return true;
   }
 }

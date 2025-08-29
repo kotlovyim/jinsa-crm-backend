@@ -22,7 +22,7 @@ export class UserService {
           firstName: true,
           lastName: true,
           position: true,
-          roles: true,
+          role: true,
         },
       });
 
@@ -67,11 +67,7 @@ export class UserService {
           id: userId,
         },
         data: {
-          roles: {
-            connect: {
-              id: roleId,
-            },
-          },
+          roleId: roleId,
         },
       });
 
@@ -84,7 +80,7 @@ export class UserService {
       throw error;
     }
   }
-  async removeRoleFromUser(userId: string, roleId: number) {
+  async changeRole(userId: string, roleId: number) {
     if (!userId || !roleId) {
       throw new NotFoundException('User or role not found');
     }
@@ -94,11 +90,7 @@ export class UserService {
           id: userId,
         },
         data: {
-          roles: {
-            disconnect: {
-              id: roleId,
-            },
-          },
+          roleId: roleId,
         },
       });
 

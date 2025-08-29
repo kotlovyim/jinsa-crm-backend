@@ -1,5 +1,7 @@
 import {
+  BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -55,27 +57,51 @@ export class AuthService {
             email: dto.email,
             password: hash,
             companyId: company.id,
-            roles: {
-              connect: { id: ceoRole.id },
-            },
+            roleId: ceoRole.id,
           },
         });
+
+        if (!user || !user.id) {
+          throw new BadRequestException('Failed to create user');
+        }
+
+        const payload = { id: user.id, isOtpEnabled: false };
+
+        const accessToken = await this.jwt.signAsync(payload, {
+          expiresIn: '15m',
+          secret: this.config.get<string>('JWT_SECRET', 'change-me'),
+        });
+
+        const refreshToken = await this.jwt.signAsync(payload, {
+          expiresIn: '7d',
+          secret: this.config.get<string>('JWT_SECRET', 'change-me'),
+        });
+
+        const updatedUser = await prisma.user.update({
+          where: { id: user.id },
+          data: { refreshToken },
+        });
+
+        if (!updatedUser) {
+          throw new BadRequestException(
+            'Failed to update user with refresh token',
+          );
+        }
 
         return {
           message:
             'Company and owner registered successfully. Please set up OTP to continue.',
-          user: {
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-          },
+          accessToken,
+          refreshToken,
         };
       });
 
       return result;
     } catch (error) {
-      console.error(error);
-      throw new Error('Failed to register company. Please try again.');
+      console.error('Transaction failed:', error);
+      throw new BadRequestException(
+        'Failed to register company. Please try again.',
+      );
     }
   }
 
@@ -92,34 +118,43 @@ export class AuthService {
         dto.password,
         existingUser.password,
       );
+
       if (!undecoded) {
-        throw new UnauthorizedException("Passwords don't match");
+        throw new BadRequestException("Passwords don't match");
       }
 
-      const payload = { id: existingUser.id };
+      if (!existingUser.isOtpEnabled) {
+        throw new ForbiddenException(
+          'User OTP is not enabled, please set up OTP to continue.',
+        );
+      }
+
+      const payload = {
+        id: existingUser.id,
+        isOtpEnabled: existingUser.isOtpEnabled,
+      };
 
       const accessToken = await this.jwt.signAsync(payload, {
         expiresIn: '15m',
         secret: this.config.get<string>('JWT_SECRET', 'change-me'),
       });
 
-      if (!existingUser.refreshToken) {
-        const refreshToken = await this.jwt.signAsync(payload, {
-          expiresIn: '7d',
-          secret: this.config.get<string>('JWT_SECRET', 'change-me'),
-        });
-        await this.prisma.user.update({
-          where: { id: existingUser.id },
-          data: { refreshToken },
-        });
-      }
+      const refreshToken = await this.jwt.signAsync(payload, {
+        expiresIn: '7d',
+        secret: this.config.get<string>('JWT_SECRET', 'change-me'),
+      });
+
+      await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: { refreshToken },
+      });
 
       return {
         accessToken,
-        refreshToken: existingUser.refreshToken,
+        refreshToken,
       };
     } catch (error) {
-      throw error;
+      throw new BadRequestException(error);
     }
   }
 }

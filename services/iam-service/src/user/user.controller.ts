@@ -20,15 +20,12 @@ import {
 import type { User } from '@app/user/types/user.types';
 import { GetUser } from '@app/auth/decorators/get-user.decorator';
 import { JwtGuard } from '@app/auth/guards/authGuard';
-import { RolesGuard } from '@app/auth/guards/roleGuard';
-import { Role } from '@app/auth/decorators/roles/role.enum';
-import { Roles } from '@app/auth/decorators/roles/roles.decorator';
 import { PermissionGuard } from '@app/auth/guards/permissionGuard';
 import { Permission } from '@app/auth/decorators/permissions/permission.enum';
-import { Permissions } from '@app/auth/decorators/permissions/permission.decorator';
+import { RequirePermission } from '@app/auth/decorators/permissions/requirePermission.decorator';
 
 @Controller('user')
-@UseGuards(JwtGuard, RolesGuard, PermissionGuard)
+@UseGuards(JwtGuard, PermissionGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -62,8 +59,7 @@ export class UserController {
   }
 
   @Post('/:userId/roles/:roleId')
-  @Roles(Role.CEO)
-  @Permissions(Permission.manage_roles)
+  @RequirePermission(Permission.manage_roles)
   @ApiOperation({ summary: 'Assign role to user' })
   @ApiBearerAuth('JWT-auth')
   @ApiResponse({
@@ -78,8 +74,7 @@ export class UserController {
   }
 
   @Delete('/:userId/roles/:roleId')
-  @Roles(Role.CEO)
-  @Permissions(Permission.manage_roles)
+  @RequirePermission(Permission.manage_roles)
   @ApiOperation({ summary: 'Remove role from user' })
   @ApiBearerAuth('JWT-auth')
   @ApiResponse({

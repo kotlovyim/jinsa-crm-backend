@@ -57,4 +57,58 @@ export class UserService {
       throw error;
     }
   }
+  async assignRoleToUser(userId: number, roleId: number) {
+    if (!userId || !roleId) {
+      throw new NotFoundException('User or role not found');
+    }
+    try {
+      const user = await this.prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          roles: {
+            connect: {
+              id: roleId,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  }
+  async removeRoleFromUser(userId: number, roleId: number) {
+    if (!userId || !roleId) {
+      throw new NotFoundException('User or role not found');
+    }
+    try {
+      const user = await this.prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          roles: {
+            disconnect: {
+              id: roleId,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  }
 }

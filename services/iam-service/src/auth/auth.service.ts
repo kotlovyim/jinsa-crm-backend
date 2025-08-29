@@ -4,8 +4,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { signUpDto } from './dto/RegisterUserDto';
+import { RegisterCompanyDto } from './dto/RegisterCompanyDto';
 import { PrismaService } from '../prisma/prisma.service';
 import { signInDto } from './dto/LoginUserDto';
 import * as bcrypt from 'bcrypt';
@@ -20,54 +19,63 @@ export class AuthService {
     private config: ConfigService,
   ) {}
 
-  async signUp(dto: signUpDto) {
+  async registerCompany(dto: RegisterCompanyDto) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    const ceoRole = await this.prisma.role.findUnique({
+      where: { role: 'CEO' },
+    });
+
+    if (!ceoRole) {
+      throw new NotFoundException(
+        'CEO role not found. Please seed the database.',
+      );
+    }
+
+    const hash = await bcrypt.hash(dto.password, 10);
+
     try {
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email: dto.email },
+      const result = await this.prisma.$transaction(async (prisma) => {
+        const company = await prisma.company.create({
+          data: {
+            name: dto.companyName,
+          },
+        });
+
+        const user = await prisma.user.create({
+          data: {
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            email: dto.email,
+            password: hash,
+            companyId: company.id,
+            roles: {
+              connect: { id: ceoRole.id },
+            },
+          },
+        });
+
+        return {
+          message:
+            'Company and owner registered successfully. Please set up OTP to continue.',
+          user: {
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+          },
+        };
       });
 
-      if (existingUser) {
-        throw new ConflictException('User already exists');
-      }
-
-      const hash = await bcrypt.hash(dto.password, 10);
-
-      const user = await this.prisma.user.create({
-        data: {
-          firstName: dto.firstName,
-          lastName: dto.lastName,
-          email: dto.email,
-          password: hash,
-        },
-      });
-
-      const accessToken = await this.jwt.signAsync({
-        expiresIn: '1h',
-        id: user.id,
-      });
-
-      const refreshToken = await this.jwt.signAsync({
-        expiresIn: '7d',
-        id: user.id,
-      });
-
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { refreshToken },
-      });
-
-      return {
-        message: 'User created successfully',
-        accessToken,
-        refreshToken,
-      };
+      return result;
     } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          throw new Error('Credentials errors');
-        }
-      }
-      throw error;
+      console.error(error);
+      throw new Error('Failed to register company. Please try again.');
     }
   }
 
@@ -91,23 +99,24 @@ export class AuthService {
       const payload = { id: existingUser.id };
 
       const accessToken = await this.jwt.signAsync(payload, {
-        expiresIn: '1h',
+        expiresIn: '15m',
         secret: this.config.get<string>('JWT_SECRET', 'change-me'),
       });
 
-      const refreshToken = await this.jwt.signAsync(payload, {
-        expiresIn: '7d',
-        secret: this.config.get<string>('JWT_SECRET', 'change-me'),
-      });
-
-      await this.prisma.user.update({
-        where: { id: existingUser.id },
-        data: { refreshToken },
-      });
+      if (!existingUser.refreshToken) {
+        const refreshToken = await this.jwt.signAsync(payload, {
+          expiresIn: '7d',
+          secret: this.config.get<string>('JWT_SECRET', 'change-me'),
+        });
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { refreshToken },
+        });
+      }
 
       return {
         accessToken,
-        refreshToken,
+        refreshToken: existingUser.refreshToken,
       };
     } catch (error) {
       throw error;

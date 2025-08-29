@@ -57,7 +57,7 @@ export class UserService {
       throw error;
     }
   }
-  async assignRoleToUser(userId: number, roleId: number) {
+  async assignRoleToUser(userId: string, roleId: number) {
     if (!userId || !roleId) {
       throw new NotFoundException('User or role not found');
     }
@@ -84,7 +84,7 @@ export class UserService {
       throw error;
     }
   }
-  async removeRoleFromUser(userId: number, roleId: number) {
+  async removeRoleFromUser(userId: string, roleId: number) {
     if (!userId || !roleId) {
       throw new NotFoundException('User or role not found');
     }

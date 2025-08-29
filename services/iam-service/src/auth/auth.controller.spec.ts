@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { signUpDto } from './dto/RegisterUserDto';
+import { RegisterCompanyDto } from './dto/RegisterCompanyDto';
 import { signInDto } from './dto/LoginUserDto';
 
 describe('AuthController', () => {
@@ -9,7 +9,7 @@ describe('AuthController', () => {
   let authService: AuthService;
 
   const mockAuthService = {
-    signUp: jest.fn(),
+    registerCompany: jest.fn(),
     signIn: jest.fn(),
   };
 
@@ -29,20 +29,26 @@ describe('AuthController', () => {
     jest.clearAllMocks();
   });
 
-  describe('signUp', () => {
-    const signUpData: signUpDto = {
+  describe('registerCompany', () => {
+    const registerCompanyData: RegisterCompanyDto = {
+      companyName: 'Test Corp',
       firstName: 'testuser',
       lastName: 'testuser',
       email: 'test@example.com',
       password: 'password123',
     };
 
-    it('should call authService.signUp with correct parameters', async () => {
-      const expectedResult = { id: 1, ...signUpData };
-      mockAuthService.signUp.mockResolvedValue(expectedResult);
+    it('should call authService.registerCompany with correct parameters', async () => {
+      const expectedResult = { 
+        message: 'Company and owner registered successfully. Please set up OTP to continue.',
+        accessToken: 'some-token',
+        refreshToken: 'some-refresh-token',
+        user: { id: 'some-uuid', email: 'test@example.com', firstName: 'testuser', lastName: 'testuser' }
+      };
+      mockAuthService.registerCompany.mockResolvedValue(expectedResult);
 
-      const result = await controller.signUp(signUpData);
-      expect(authService.signUp).toHaveBeenCalledWith(signUpData);
+      const result = await controller.registerCompany(registerCompanyData);
+      expect(authService.registerCompany).toHaveBeenCalledWith(registerCompanyData);
       expect(result).toEqual(expectedResult);
     });
   });

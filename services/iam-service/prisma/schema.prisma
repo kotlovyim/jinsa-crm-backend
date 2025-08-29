@@ -7,25 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Roles {
-  CEO
-  HR
-  TeamLead
-  TeamMember
-}
+
 
 model User {
-  id            Int       @id @default(autoincrement())
+  id            String       @id @default(uuid())
   firstName     String    @default("")
   lastName      String    @default("")
   position      String    @default("")
-  // role          Roles     @default(TeamMember)
   roles          Role[]   @relation("userRoles")
   email         String    @unique
   password      String
   refreshToken  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt() @default(now())
+  company       Company   @relation(fields: [companyId], references: [id])
+  companyId     String
+}
+
+model Company {
+  id        String      @id @default(uuid())
+  name      String
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt() @default(now())
 }
 
 model Role {

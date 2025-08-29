@@ -8,8 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-
+import { RegisterCompanyDto } from './dto/RegisterCompanyDto';
 jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashedPassword'),
   compare: jest.fn().mockResolvedValue(true),
@@ -17,14 +16,21 @@ jest.mock('bcrypt', () => ({
 
 describe('AuthService', () => {
   let authService: AuthService;
-  let prismaService: PrismaService;
   let jwtService: JwtService;
 
   const mockPrismaService = {
     user: {
       findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
+    role: {
+      findUnique: jest.fn(),
+    },
+    company: {
+      create: jest.fn(),
+    },
+    $transaction: jest.fn(),
   };
 
   const mockJwtService = {
@@ -41,78 +47,81 @@ describe('AuthService', () => {
     }).compile();
 
     authService = module.get<AuthService>(AuthService);
-    prismaService = module.get<PrismaService>(PrismaService);
     jwtService = module.get<JwtService>(JwtService);
     jest.clearAllMocks();
   });
 
-  describe('signUp', () => {
-    const signUpDto = {
+  describe('registerCompany', () => {
+    const registerCompanyDto: RegisterCompanyDto = {
+      companyName: 'Test Corp',
       firstName: 'testuser',
       lastName: 'testuser',
       email: 'test@example.com',
       password: 'password123',
     };
 
-    it('should create a new user', async () => {
+    it('should create a new company and user, and return tokens', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
-      mockPrismaService.user.create.mockResolvedValue({
-        ...signUpDto,
-        password: 'hashedPassword',
+      mockPrismaService.role.findUnique.mockResolvedValue({
         id: 1,
+        role: 'CEO',
+      });
+      mockJwtService.signAsync.mockResolvedValue('mockToken');
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const mockPrisma = {
+          company: {
+            create: jest
+              .fn()
+              .mockResolvedValue({ id: 'company-uuid', name: 'Test Corp' }),
+          },
+          user: {
+            create: jest.fn().mockResolvedValue({
+              id: 'user-uuid',
+              email: 'test@example.com',
+            }),
+            update: jest.fn().mockResolvedValue(true),
+          },
+        };
+        return await callback(mockPrisma);
       });
 
-      const result = await authService.signUp(signUpDto);
-      expect(result).toBeDefined();
-      expect(result.message).toBe('User created successfully');
+      const result = await authService.registerCompany(registerCompanyDto);
+
+      expect(result.message).toContain('registered successfully');
+      expect(mockPrismaService.$transaction).toHaveBeenCalled();
     });
 
     it('should throw ConflictException if user already exists', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        email: 'test@example.com',
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: 'user-uuid' });
+
+      await expect(
+        authService.registerCompany(registerCompanyDto),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw NotFoundException if CEO role is not found', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockPrismaService.role.findUnique.mockResolvedValue(null);
+
+      await expect(
+        authService.registerCompany(registerCompanyDto),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw a generic error if transaction fails', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockPrismaService.role.findUnique.mockResolvedValue({
         id: 1,
-        firstName: 'existinguser',
-        lastName: 'existinguser',
+        role: 'CEO',
       });
-
-      await expect(authService.signUp(signUpDto)).rejects.toThrow(
-        ConflictException,
-      );
-    });
-
-    it('should handle Prisma P2002 error (unique constraint)', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
-      const prismaError = new PrismaClientKnownRequestError(
-        'Unique constraint failed',
-        { code: 'P2002', clientVersion: '1.0' } as any,
-      );
-      mockPrismaService.user.create.mockRejectedValue(prismaError);
-
-      await expect(authService.signUp(signUpDto)).rejects.toThrow(
-        'Credentials errors',
-      );
-    });
-
-    it('should handle other Prisma errors', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
-      const prismaError = new PrismaClientKnownRequestError(
-        'Some database error',
-        { code: 'P1001', clientVersion: '1.0' } as any,
-      );
-      mockPrismaService.user.create.mockRejectedValue(prismaError);
-
-      await expect(authService.signUp(signUpDto)).rejects.toThrow(
-        PrismaClientKnownRequestError,
-      );
-    });
-
-    it('should handle unexpected errors', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
-      mockPrismaService.user.create.mockRejectedValue(
-        new Error('Unexpected error'),
+      mockPrismaService.$transaction.mockRejectedValue(
+        new Error('Transaction failed'),
       );
 
-      await expect(authService.signUp(signUpDto)).rejects.toThrow(Error);
+      await expect(
+        authService.registerCompany(registerCompanyDto),
+      ).rejects.toThrow('Failed to register company. Please try again.');
     });
   });
 
@@ -137,7 +146,7 @@ describe('AuthService', () => {
       const result = await authService.signIn(signInDto);
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
-      expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
+      expect(mockJwtService.signAsync).toHaveBeenCalledTimes(2);
     });
 
     it('should throw NotFoundException if user not found', async () => {

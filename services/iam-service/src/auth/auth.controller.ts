@@ -1,13 +1,7 @@
 import { Body, Controller, Post, HttpStatus, HttpCode } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBody,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { signUpDto } from './dto/RegisterUserDto';
+import { RegisterCompanyDto } from './dto/RegisterCompanyDto';
 import { signInDto } from './dto/LoginUserDto';
 import { AuthResponseDto } from './dto/AuthResponseDto';
 
@@ -16,12 +10,12 @@ import { AuthResponseDto } from './dto/AuthResponseDto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('register')
+  @Post('company/register')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register a new user' })
+  @ApiOperation({ summary: 'Register a new company and its owner' })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'User successfully registered',
+    description: 'Company and owner successfully registered. Please set up OTP to continue.',
     type: AuthResponseDto,
   })
   @ApiResponse({
@@ -30,11 +24,11 @@ export class AuthController {
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'User already exists',
+    description: 'User with this email already exists',
   })
-  @ApiBody({ type: signUpDto })
-  async signUp(@Body() dto: signUpDto) {
-    return this.authService.signUp(dto);
+  @ApiBody({ type: RegisterCompanyDto })
+  async registerCompany(@Body() dto: RegisterCompanyDto) {
+    return this.authService.registerCompany(dto);
   }
 
   @Post('login')

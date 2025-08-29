@@ -1,7 +1,7 @@
-import { User as PrismaUser, Roles } from '@prisma/client';
+import { User as PrismaUser, Role } from '@prisma/client';
 
 export type User = PrismaUser & {
-  roles: Roles[];
+  roles: Role[];
 };
 
 export type CreateUserInput = Omit<

@@ -10,12 +10,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { signInDto } from './dto/LoginUserDto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
+    private config: ConfigService,
   ) {}
 
   async signUp(dto: signUpDto) {
@@ -30,7 +32,7 @@ export class AuthService {
 
       const hash = await bcrypt.hash(dto.password, 10);
 
-      await this.prisma.user.create({
+      const user = await this.prisma.user.create({
         data: {
           firstName: dto.firstName,
           lastName: dto.lastName,
@@ -39,7 +41,26 @@ export class AuthService {
         },
       });
 
-      return { message: 'User created successfully' };
+      const accessToken = await this.jwt.signAsync({
+        expiresIn: '1h',
+        id: user.id,
+      });
+
+      const refreshToken = await this.jwt.signAsync({
+        expiresIn: '7d',
+        id: user.id,
+      });
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+      });
+
+      return {
+        message: 'User created successfully',
+        accessToken,
+        refreshToken,
+      };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -71,12 +92,12 @@ export class AuthService {
 
       const accessToken = await this.jwt.signAsync(payload, {
         expiresIn: '1h',
-        secret: process.env.JWT_TOKEN,
+        secret: this.config.get<string>('JWT_SECRET', 'change-me'),
       });
 
       const refreshToken = await this.jwt.signAsync(payload, {
         expiresIn: '7d',
-        secret: process.env.JWT_TOKEN,
+        secret: this.config.get<string>('JWT_SECRET', 'change-me'),
       });
 
       await this.prisma.user.update({

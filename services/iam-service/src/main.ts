@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -9,6 +10,8 @@ async function bootstrap() {
   app.enableCors();
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+  app.useGlobalInterceptors(new LoggingInterceptor());
 
   const config = new DocumentBuilder()
     .setTitle('IAM Service API')
@@ -25,6 +28,7 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
+    .addSecurityRequirements('JWT-auth')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

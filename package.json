@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@nestjs/cache-manager": "^3.0.1",
+    "cache-manager": "^7.2.0",
+    "cache-manager-redis-store": "^3.0.1",
+    "redis": "^5.8.2"
+  }
+}

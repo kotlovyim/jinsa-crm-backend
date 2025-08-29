@@ -1,39 +1,60 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '@app/prisma/prisma.service';
 import { updateUserDto } from './dto/UpdateUserDto';
+import { User } from './types/user.types';
 
 @Injectable()
 export class UserService {
-    constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
-    async getUserData(user: any) {
-        try {
-            const userData = await this.prisma.user.findUnique({where: {
-                id: user.userId
-            }})
+  async getUserData(user: User) {
+    try {
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      const userData = await this.prisma.user.findUnique({
+        where: {
+          id: user.id,
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          position: true,
+          roles: true,
+        },
+      });
 
-            return userData
-        } catch(error) {
-            throw error
-        }
+      if (!userData) {
+        throw new NotFoundException('User not found');
+      }
+
+      return userData;
+    } catch (error) {
+      throw error;
     }
+  }
 
+  async updateNonCriticalData(dto: updateUserDto, user: User) {
+    try {
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      const update = await this.prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          position: dto.position,
+        },
+      });
 
-    async updateNonCriticalData(dto:updateUserDto, user: any) {
-        try {
-            const update = await this.prisma.user.update({
-                where: {
-                    id: user.userId 
-                }, data: {
-                    firstName: dto.firstName,
-                    lastName: dto.lastName,
-                    position: dto.position
-                }
-            })
-
-            return update
-        } catch(error) {
-            throw error
-        }
+      return update;
+    } catch (error) {
+      throw error;
     }
+  }
 }

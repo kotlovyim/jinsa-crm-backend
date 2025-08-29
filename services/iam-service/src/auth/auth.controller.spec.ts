@@ -31,7 +31,8 @@ describe('AuthController', () => {
 
   describe('signUp', () => {
     const signUpData: signUpDto = {
-      username: 'testuser',
+      firstName: 'testuser',
+      lastName: 'testuser',
       email: 'test@example.com',
       password: 'password123',
     };

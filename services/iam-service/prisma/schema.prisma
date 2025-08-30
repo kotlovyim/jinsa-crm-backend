@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model User {
+  id            String       @id @default(uuid())
+  firstName     String    @default("")
+  lastName      String    @default("")
+  position      String    @default("")
+  role         Role    @relation("userRoles",  fields: [roleId], references: [id])
+  roleId        Int
+  email         String    @unique
+  password      String
+  refreshToken  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt() @default(now())
+  company       Company   @relation(fields: [companyId], references: [id])
+  companyId     String
+  otpSecret     String?
+  isOtpEnabled Boolean @default(false)
+}
+
+model Company {
+  id        String      @id @default(uuid())
+  name      String
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt() @default(now())
+}
+
+model Role {
+    id            Int             @id @default(autoincrement())
+    role          String          @unique
+    users         User[]          @relation("userRoles")
+    permission    Permission[]    @relation("rolePermission")
+}
+
+model Permission {
+  id                          Int        @id @default(autoincrement())
+  title                       String     @unique
+  description                 String
+  roles Role[]                @relation("rolePermission")
+}

@@ -67,7 +67,7 @@ export class UserController {
     description: 'Role assigned to user successfully',
   })
   async assignRoleToUser(
-    @Param('userId', ParseIntPipe) userId: string,
+    @Param('userId') userId: string,
     @Param('roleId', ParseIntPipe) roleId: number,
   ) {
     return this.userService.assignRoleToUser(userId, roleId);
@@ -82,7 +82,7 @@ export class UserController {
     description: 'Role changed successfully',
   })
   async changeRole(
-    @Param('userId', ParseIntPipe) userId: string,
+    @Param('userId') userId: string,
     @Param('roleId', ParseIntPipe) roleId: number,
   ) {
     return this.userService.changeRole(userId, roleId);

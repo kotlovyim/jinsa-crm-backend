@@ -7,6 +7,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { UserModule } from './user/user.module';
 import { RolesModule } from './roles/roles.module';
 import { OtpModule } from './otp/otp.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -20,12 +22,13 @@ import { OtpModule } from './otp/otp.module';
     RolesModule,
     OtpModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_PIPE,
       useClass: ValidationPipe,
     },
+    AppService,
   ],
 })
 export class AppModule {}

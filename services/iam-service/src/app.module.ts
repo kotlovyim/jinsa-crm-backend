@@ -9,18 +9,21 @@ import { RolesModule } from './roles/roles.module';
 import { OtpModule } from './otp/otp.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { InvitationsModule } from './invitations/invitations.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: ['.env'],
-    }),
+    
     AuthModule,
     PrismaModule,
     UserModule,
     RolesModule,
     OtpModule,
+    InvitationsModule,
+    ConfigModule.forRoot({
+      isGlobal: true
+    })
   ],
   controllers: [AppController],
   providers: [

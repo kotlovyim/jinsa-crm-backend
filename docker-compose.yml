@@ -1,46 +1,71 @@
 services:
-    postgres:
-        image: postgres:16-alpine
-        environment:
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-            POSTGRES_DB: jinsa
-        volumes:
-            - pgdata:/var/lib/postgresql/data
-        ports:
-            - "5432:5432"
-        healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U postgres"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jinsa
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-    iam-service:
-        build:
-            context: ./services/iam-service
-        env_file:
-            - ./services/iam-service/.env
-        environment:
-            - PORT=3001
-            - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/jinsa?schema=public
-        depends_on:
-            postgres:
-                condition: service_healthy
-        ports:
-            - "3001:3001"
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"   # RabbitMQ broker
+      - "15672:15672" # RabbitMQ management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-    api-gateway:
-        build:
-            context: ./api-gateway
-        env_file:
-            - ./api-gateway/.env
-        environment:
-            - PORT=3000
-            - IAM_SERVICE_URL=http://iam-service:3001
-        depends_on:
-            - iam-service
-        ports:
-            - "3000:3000"
+  iam-service:
+    build:
+      context: ./services/iam-service
+    env_file:
+      - ./services/iam-service/.env
+    environment:
+      - PORT=3001
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/jinsa?schema=public
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    volumes:
+      - ./services/iam-service:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    env_file:
+      - ./api-gateway/.env
+    environment:
+      - PORT=3000
+      - IAM_SERVICE_URL=http://iam-service:3001
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    volumes:
+      - ./api-gateway:/app
+      - /app/node_modules
+    depends_on:
+      - iam-service
+      - rabbitmq
+    ports:
+      - "3000:3000"
 
 volumes:
-    pgdata:
+  pgdata:

@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,7 +11,6 @@ async function bootstrap() {
   app.enableCors();
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   const config = new DocumentBuilder()
@@ -40,6 +40,20 @@ async function bootstrap() {
     },
   });
 
+  
+   const rabbitMQ = await app.connectMicroservice<MicroserviceOptions>({
+      transport: Transport.RMQ,
+      options: {
+        urls: ['amqp://guest:guest@rabbitmq:5672'],
+        queue: 'cats_queue',
+        queueOptions: {
+          durable: false
+        },
+      },
+    });
+
+
+  await rabbitMQ.listen()
   await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
   const url = await app.getUrl();
   console.log(`Application is running on: ${url}`);

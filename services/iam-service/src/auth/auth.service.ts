@@ -123,19 +123,21 @@ export class AuthService {
         throw new BadRequestException("Passwords don't match");
       }
 
-      if (!existingUser.isOtpEnabled) {
-        throw new ForbiddenException(
-          'User OTP is not enabled, please set up OTP to continue.',
-        );
-      }
-
+      // if (!existingUser.isOtpEnabled) {
+      //   throw new ForbiddenException(
+      //     'User OTP is not enabled, please set up OTP to continue.',
+      //   );
+      // }
+      console.log('sss');
+      
+      
       const payload = {
         id: existingUser.id,
-        isOtpEnabled: existingUser.isOtpEnabled,
+        // isOtpEnabled: existingUser.isOtpEnabled,
       };
 
       const accessToken = await this.jwt.signAsync(payload, {
-        expiresIn: '15m',
+        expiresIn: '2h',
         secret: this.config.get<string>('JWT_SECRET', 'change-me'),
       });
 

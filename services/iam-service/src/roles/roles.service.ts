@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { createRoleDto } from './dto/createRoleDto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '@app/providers/prisma/prisma.service';
 
 @Injectable()
 export class RolesService {

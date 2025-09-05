@@ -7,7 +7,6 @@ import {
   UseGuards,
   Param,
   ParseIntPipe,
-  Delete,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { updateUserDto } from './dto/UpdateUserDto';

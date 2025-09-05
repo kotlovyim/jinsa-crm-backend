@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../providers/prisma/prisma.service';
 import { AuthService } from './auth.service';
 import {
   ConflictException,

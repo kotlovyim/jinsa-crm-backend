@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
-import { PrismaModule } from './prisma/prisma.module';
+import { PrismaModule } from './providers/prisma/prisma.module';
 import { APP_PIPE } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { UserModule } from './user/user.module';
@@ -9,12 +9,10 @@ import { RolesModule } from './roles/roles.module';
 import { OtpModule } from './otp/otp.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { InvitationsModule } from './invitations/invitations.module';
 
 @Module({
   imports: [
-    
     AuthModule,
     PrismaModule,
     UserModule,
@@ -22,8 +20,8 @@ import { InvitationsModule } from './invitations/invitations.module';
     OtpModule,
     InvitationsModule,
     ConfigModule.forRoot({
-      isGlobal: true
-    })
+      isGlobal: true,
+    }),
   ],
   controllers: [AppController],
   providers: [

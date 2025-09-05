@@ -1,10 +1,21 @@
-import { Body, Controller, Post, HttpStatus, HttpCode } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  HttpStatus,
+  HttpCode,
+  Get,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterCompanyDto } from './dto/RegisterCompanyDto';
 import { signInDto } from './dto/LoginUserDto';
 import { AuthResponseDto } from './dto/AuthResponseDto';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
+import { ForgotPasswordDto } from './dto/ForgotPasswordDto';
+import { ResetPasswordDto } from './dto/ResetPasswordDto';
+import { RefreshTokenDto } from './dto/RefreshTokenDto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -48,6 +59,70 @@ export class AuthController {
   @ApiBody({ type: signInDto })
   async signIn(@Body() dto: signInDto) {
     return this.authService.signIn(dto);
+  }
+
+  @Get('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify user email' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Email successfully verified',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid or expired token',
+  })
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Password reset link sent to your email',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found',
+  })
+  @ApiBody({ type: ForgotPasswordDto })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset user password' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Password successfully reset',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid or expired token',
+  })
+  @ApiBody({ type: ResetPasswordDto })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Tokens successfully refreshed',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid refresh token',
+  })
+  @ApiBody({ type: RefreshTokenDto })
+  async refreshToken(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshToken(dto.refreshToken);
   }
 
   @Post('login/verify-otp')

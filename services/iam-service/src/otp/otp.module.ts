@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { OtpService } from './otp.service';
 import { OtpController } from './otp.controller';
-import { PrismaModule } from '@app/prisma/prisma.module';
+import { PrismaModule } from '@app/providers/prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({

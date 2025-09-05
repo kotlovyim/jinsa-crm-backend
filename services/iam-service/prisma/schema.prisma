@@ -26,6 +26,7 @@ model User {
   otpSecret     String?
   isOtpEnabled Boolean @default(false)
   isEmailVerified Boolean @default(false)
+  isActive      Boolean @default(true)
 }
 
 model Company {

@@ -212,51 +212,51 @@ export class AuthService {
   }
 
   async signIn(dto: signInDto) {
-    try {
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email: dto.email },
-      });
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
 
-      if (!existingUser) {
-        throw new NotFoundException('User not found');
-      }
-
-      const undecoded = await bcrypt.compare(
-        dto.password,
-        existingUser.password,
-      );
-
-      if (!undecoded) {
-        throw new BadRequestException("Passwords don't match");
-      }
-
-      const payload = {
-        id: existingUser.id,
-        companyId: existingUser.companyId,
-      };
-
-      const accessToken = await this.jwt.signAsync(payload, {
-        expiresIn: '2h',
-        secret: this.config.get<string>('JWT_SECRET', 'change-me'),
-      });
-
-      const refreshToken = await this.jwt.signAsync(payload, {
-        expiresIn: '7d',
-        secret: this.config.get<string>('JWT_SECRET', 'change-me'),
-      });
-
-      await this.prisma.user.update({
-        where: { id: existingUser.id },
-        data: { refreshToken },
-      });
-
-      return {
-        accessToken,
-        refreshToken,
-      };
-    } catch (error) {
-      throw new BadRequestException(error);
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
     }
+
+    if (!existingUser.isActive) {
+      throw new ForbiddenException('User is deactivated');
+    }
+
+    const undecoded = await bcrypt.compare(
+      dto.password,
+      existingUser.password,
+    );
+
+    if (!undecoded) {
+      throw new BadRequestException("Passwords don't match");
+    }
+
+    const payload = {
+      id: existingUser.id,
+      companyId: existingUser.companyId,
+    };
+
+    const accessToken = await this.jwt.signAsync(payload, {
+      expiresIn: '2h',
+      secret: this.config.get<string>('JWT_SECRET', 'change-me'),
+    });
+
+    const refreshToken = await this.jwt.signAsync(payload, {
+      expiresIn: '7d',
+      secret: this.config.get<string>('JWT_SECRET', 'change-me'),
+    });
+
+    await this.prisma.user.update({
+      where: { id: existingUser.id },
+      data: { refreshToken },
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+    };
   }
 
   async verifyOtp(email: string, otpCode: string) {
@@ -299,5 +299,13 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async logout(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+    return { message: 'Logged out successfully' };
   }
 }

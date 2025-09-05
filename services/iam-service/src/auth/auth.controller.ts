@@ -6,6 +6,7 @@ import {
   HttpCode,
   Get,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -16,6 +17,9 @@ import { VerifyOtpDto } from './dto/verifyOtp.dto';
 import { ForgotPasswordDto } from './dto/ForgotPasswordDto';
 import { ResetPasswordDto } from './dto/ResetPasswordDto';
 import { RefreshTokenDto } from './dto/RefreshTokenDto';
+import { GetUser } from './decorators/get-user.decorator';
+import { User } from '@app/user/types/user.types';
+import { JwtGuard } from './guards/jwtGuard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -140,5 +144,17 @@ export class AuthController {
   @ApiBody({ type: VerifyOtpDto })
   async verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.authService.verifyOtp(dto.email, dto.otpCode);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'User logout' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User successfully logged out',
+  })
+  async logout(@GetUser() user: User) {
+    return this.authService.logout(user.id);
   }
 }

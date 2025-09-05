@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { updateUserDto } from './dto/UpdateUserDto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import {
   ApiOperation,
   ApiResponse,
@@ -85,5 +86,21 @@ export class UserController {
     @Param('roleId', ParseIntPipe) roleId: number,
   ) {
     return this.userService.changeRole(userId, roleId);
+  }
+
+  @Patch('/:id/status')
+  @RequirePermission(Permission.manage_users)
+  @ApiOperation({ summary: 'Update user status' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiResponse({
+    status: 200,
+    description: 'User status updated successfully',
+  })
+  async updateUserStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserStatusDto,
+    @GetUser() user: User,
+  ) {
+    return this.userService.updateUserStatus(id, dto, user);
   }
 }

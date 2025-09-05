@@ -24,22 +24,37 @@ export class PermissionGuard implements CanActivate {
 
     const { user } = context.switchToHttp().getRequest();
 
-    const userRole = await this.prisma.user.findUnique({
+    const userWithRole = await this.prisma.user.findUnique({
       where: {
         id: user.id,
       },
-      select: {
-        roleId: true,
+      include: {
+        role: {
+          include: {
+            permission: true,
+          },
+        },
       },
     });
-    console.log(userRole);
 
-    const userPermission = await this.prisma.role.findUnique({
-      where: {
-        id: userRole?.roleId,
-      },
-    });
-    console.log(userPermission);
+    if (!userWithRole || !userWithRole.role) {
+      return false;
+    }
+
+    const userPermissions = userWithRole.role.permission.map(
+      (p: { title: string }) => p.title,
+    );
+
+    const hasPermission = () =>
+      requiredPermissions.every((permission) =>
+        userPermissions.includes(permission),
+      );
+
+    if (!hasPermission()) {
+      throw new ForbiddenException(
+        'You do not have permission to access this resource',
+      );
+    }
 
     return true;
   }

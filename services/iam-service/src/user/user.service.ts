@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '@app/providers/prisma/prisma.service';
 import { updateUserDto } from './dto/UpdateUserDto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { User } from './types/user.types';
 
 @Injectable()
@@ -102,5 +107,39 @@ export class UserService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async updateUserStatus(
+    id: string,
+    dto: UpdateUserStatusDto,
+    requestingUser: User,
+  ) {
+    if (id === requestingUser.id) {
+      throw new ForbiddenException('You cannot deactivate yourself.');
+    }
+
+    const userToUpdate = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!userToUpdate) {
+      throw new NotFoundException('User not found.');
+    }
+
+    if (userToUpdate.companyId !== requestingUser.companyId) {
+      throw new ForbiddenException(
+        'You can only manage users in your own company.',
+      );
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        isActive: dto.isActive,
+        refreshToken: null,
+      },
+    });
+
+    return updatedUser;
   }
 }

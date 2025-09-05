@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import * as speakeasy from 'speakeasy';
 import { PrismaService } from '@app/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -45,7 +49,7 @@ export class OtpService {
     });
 
     if (!isValid) {
-      throw new UnauthorizedException('Invalid OTP');
+      throw new BadRequestException('Invalid OTP');
     }
 
     const payload = { id: user.id, isOtpEnabled: true };
@@ -55,26 +59,27 @@ export class OtpService {
       secret: this.config.get<string>('JWT_SECRET', 'change-me'),
     });
 
-    if (!user.refreshToken) {
-      const refreshToken = await this.jwt.signAsync(payload, {
-        expiresIn: '7d',
-        secret: this.config.get<string>('JWT_SECRET', 'change-me'),
-      });
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { refreshToken },
-      });
-    }
+    const refreshToken = await this.jwt.signAsync(payload, {
+      expiresIn: '7d',
+      secret: this.config.get<string>('JWT_SECRET', 'change-me'),
+    });
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { isOtpEnabled: true },
+      data: { refreshToken },
     });
+
+    if (!user.isOtpEnabled) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { isOtpEnabled: true },
+      });
+    }
 
     return {
       message: 'OTP verified successfully',
       accessToken,
-      refreshToken: user.refreshToken,
+      refreshToken,
     };
   }
 }

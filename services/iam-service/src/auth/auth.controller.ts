@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { RegisterCompanyDto } from './dto/RegisterCompanyDto';
 import { signInDto } from './dto/LoginUserDto';
 import { AuthResponseDto } from './dto/AuthResponseDto';
+import { VerifyOtpDto } from './dto/verifyOtp.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -47,5 +48,22 @@ export class AuthController {
   @ApiBody({ type: signInDto })
   async signIn(@Body() dto: signInDto) {
     return this.authService.signIn(dto);
+  }
+
+  @Post('login/verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify OTP' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'OTP verified successfully',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid OTP',
+  })
+  @ApiBody({ type: VerifyOtpDto })
+  async verifyOtp(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyOtp(dto.email, dto.otpCode);
   }
 }

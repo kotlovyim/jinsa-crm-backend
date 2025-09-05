@@ -1,10 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { RegisterCompanyDto } from './dto/RegisterCompanyDto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,7 +10,7 @@ import { signInDto } from './dto/LoginUserDto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-
+import * as speakeasy from 'speakeasy';
 @Injectable()
 export class AuthService {
   constructor(
@@ -89,8 +87,7 @@ export class AuthService {
         }
 
         return {
-          message:
-            'Company and owner registered successfully. Please set up OTP to continue.',
+          message: 'Company and owner registered successfully',
           accessToken,
           refreshToken,
         };
@@ -123,14 +120,12 @@ export class AuthService {
         throw new BadRequestException("Passwords don't match");
       }
 
-      // if (!existingUser.isOtpEnabled) {
-      //   throw new ForbiddenException(
-      //     'User OTP is not enabled, please set up OTP to continue.',
-      //   );
-      // }
-      console.log('sss');
-      
-      
+      if (!existingUser.isOtpEnabled) {
+        throw new ForbiddenException(
+          'User OTP is not enabled, please set up OTP to continue.',
+        );
+      }
+
       const payload = {
         id: existingUser.id,
         // isOtpEnabled: existingUser.isOtpEnabled,
@@ -158,5 +153,47 @@ export class AuthService {
     } catch (error) {
       throw new BadRequestException(error);
     }
+  }
+
+  async verifyOtp(email: string, otpCode: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isValid = speakeasy.totp.verify({
+      secret: user.otpSecret || '',
+      encoding: 'base32',
+      token: otpCode,
+    });
+
+    if (!isValid) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    const payload = { id: user.id, isOtpEnabled: true };
+
+    const accessToken = await this.jwt.signAsync(payload, {
+      expiresIn: '15m',
+      secret: this.config.get<string>('JWT_SECRET', 'change-me'),
+    });
+
+    const refreshToken = await this.jwt.signAsync(payload, {
+      expiresIn: '7d',
+      secret: this.config.get<string>('JWT_SECRET', 'change-me'),
+    });
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    return {
+      message: 'OTP verified successfully',
+      accessToken,
+      refreshToken,
+    };
   }
 }
